@@ -35,14 +35,14 @@ $$
 Then we update the grid momentum (assuming symplectic Euler) for each grid $i$:
 
 $$
-(m\mathbf{v})_i^{(n+1)}=\sum_{p \in N_i} w_{ip}m_p(\mathbf{v}_p^{(n)}+\mathbf{C}_p^{(n)}(\mathbf{x}_i-\mathbf{x}_p^{(n)}))
-+\Delta t(\sum_{p \in N_i} w_{ip}m_pg+\mathbf{f}_i^{(n+1)})
+(m\mathbf{v})\_i^{(n+1)}=\sum\_{p \in N_i} w\_{ip}m\_p(\mathbf{v}\_p^{(n)}+\mathbf{C}\_p^{(n)}(\mathbf{x}\_i-\mathbf{x}\_p^{(n)}))
++\Delta t(\sum\_{p \in N_i} w\_{ip}m_pg+\mathbf{f}_i^{(n+1)})
 $$
 
 There are two terms in this equation. The first term is the previous grid momentum gathered from the particles' momentum (weighted by a quadratic kernel function). The second term is the impulse resulted from gravity and the nodal force $\mathbf{f}_i^{(n+1)}$. $\mathbf{f}_i^{(n+1)}$ is derived from potential energy gradients and have the following final form:
 
 $$
-\mathbf{f}_i^{(n+1)}=-\frac{\partial U}{\partial \mathbf{x}_i}=\frac{4}{\Delta x^2} \sum_{p \in N_i} w_{ip}V_p^0 \mathbf{P}(\mathbf{F}_p^{(n+1)})(\mathbf{F}_p^{(n+1)})^\top(\mathbf{x}_i-\mathbf{x}_p^{(n)})
+\mathbf{f}\_i^{(n+1)}=-\frac{\partial U}{\partial \mathbf{x}\_i}=\frac{4}{\Delta x^2} \sum\_{p \in N_i} w\_{ip}V\_p^0 \mathbf{P}(\mathbf{F}\_p^{(n+1)})(\mathbf{F}\_p^{(n+1)})^\top(\mathbf{x}\_i-\mathbf{x}\_p^{(n)})
 $$
 
 in which $w_{ip}$ is also the weight value from the quadratic kernel function, $V_p^0$ is the initial volume of particle $p$, and $\mathbf{P}$ is the 1st Piola stress of deformation gradient $\mathbf{F}$.
@@ -62,8 +62,14 @@ It is worth noting that we only simulate the elastic and the snow material with 
 (1) For the fluid material, we use the model of weakly compressible fluids. We apply this simplification so we do not need to do projection in the Grid Operation step. In this model, we use Cauchy stress $\sigma=-p \mathbf{I}=K(J-1)\mathbf{I}$ to replace the 1st Piola stress $\mathbf{P}(\mathbf{F})\mathbf{F}^\top$. $E$ is the bulk modulus and we use $K=400$ in our system. $J$ is the volume ratio mentioned above. We directly update $J$ in the fluid model in order to avoid catastrophic cancellation problem:
 
 $$
-\mathbf{F}_p^{(n+1)}=(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)}) \mathbf{F}_p^{(n)} \\
-\det(\mathbf{F}_p^{(n+1)})=\det(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)})\det(\mathbf{F}_p^{(n)}) \\
+\mathbf{F}_p^{(n+1)}=(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)}) \mathbf{F}_p^{(n)}
+$$
+
+$$
+\det(\mathbf{F}_p^{(n+1)})=\det(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)})\det(\mathbf{F}_p^{(n)})
+$$
+
+$$
 J_p^{(n+1)}=(1+\Delta t\mathbf{tr}(\mathbf{C}_p^{(n)}))J_p^{(n)}
 $$
 
@@ -100,9 +106,15 @@ Actually we also add the gravity in this stage instead of adding it in the P2G p
 In this last part, we update the velocity and the position of each particle $p$ from grids with symplectic Euler. We also update the matrix $\mathbf{C}$ . Then we have
 
 $$
-\mathbf{v}_p^{(n+1)}=\sum_{i \in N_p} w_{ip}\mathbf{v}_i^{(n+1)} \\
-\mathbf{C}_p^{(n+1)}=\frac{4}{\Delta x^2} \sum_{i \in N_p} w_{ip}\mathbf{v}_i^{(n+1)}(\mathbf{x}_i-\mathbf{x}_p^{(n)})^\top \\
-\mathbf{x}_p^{(n+1)}=\mathbf{x}_p^{(n)}+\Delta t \mathbf{v}_p^{(n+1)}
+\mathbf{v}\_p^{(n+1)}=\sum\_{i \in N_p} w\_{ip}\mathbf{v}\_i^{(n+1)}
+$$
+
+$$
+\mathbf{C}\_p^{(n+1)}=\frac{4}{\Delta x^2} \sum\_{i \in N_p} w\_{ip}\mathbf{v}\_i^{(n+1)}(\mathbf{x}\_i-\mathbf{x}\_p^{(n)})^\top
+$$
+
+$$
+\mathbf{x}\_p^{(n+1)}=\mathbf{x}\_p^{(n)}+\Delta t \mathbf{v}\_p^{(n+1)}
 $$
 
 
