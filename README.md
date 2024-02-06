@@ -21,44 +21,58 @@ The MLS-MPM is a method of hybrid of lagrangian and eulerian and it is also simi
 #### 2.1 Particle to Grid
 
 Firstly, we need to compute the deformation gredient $\mathbf{F}$ of each particle $p$. We have
+
 $$
 \mathbf{F}_p^{(n+1)}=(\mathbf{I}+\Delta t \nabla \mathbf{v}_p^{(n)}) \mathbf{F}_p^{(n)} \quad \quad \mathbf{F}_p^{(0)}=\mathbf{I}
 $$
+
 We use the matrix $\mathbf{C}$ in APIC to approximate $\mathbf{v}_p$ for efficiency here. So we have
+
 $$
 \mathbf{F}_p^{(n+1)}=(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)}) \mathbf{F}_p^{(n)}
 $$
+
 Then we update the grid momentum (assuming symplectic Euler) for each grid $i$:
+
 $$
 (m\mathbf{v})_i^{(n+1)}=\sum_{p \in N_i} w_{ip}m_p(\mathbf{v}_p^{(n)}+\mathbf{C}_p^{(n)}(\mathbf{x}_i-\mathbf{x}_p^{(n)}))
 +\Delta t(\sum_{p \in N_i} w_{ip}m_pg+\mathbf{f}_i^{(n+1)})
 $$
+
 There are two terms in this equation. The first term is the previous grid momentum gathered from the particles' momentum (weighted by a quadratic kernel function). The second term is the impulse resulted from gravity and the nodal force $\mathbf{f}_i^{(n+1)}$. $\mathbf{f}_i^{(n+1)}$ is derived from potential energy gradients and have the following final form:
+
 $$
 \mathbf{f}_i^{(n+1)}=-\frac{\partial U}{\partial \mathbf{x}_i}=\frac{4}{\Delta x^2} \sum_{p \in N_i} w_{ip}V_p^0 \mathbf{P}(\mathbf{F}_p^{(n+1)})(\mathbf{F}_p^{(n+1)})^\top(\mathbf{x}_i-\mathbf{x}_p^{(n)})
 $$
+
 in which $w_{ip}$ is also the weight value from the quadratic kernel function, $V_p^0$ is the initial volume of particle $p$, and $\mathbf{P}$ is the 1st Piola stress of deformation gradient $\mathbf{F}$.
 
 For particles' scattering quantities (grids' gathering quantities), we only consider the $3 \times 3 \times 3$ neighbor grids for each particle $p$. 
 
 For the 1st Piola stress term, we use the Corotated model
+
 $$
 \mathbf{P}(\mathbf{F})=\frac{\partial \psi}{\partial \mathbf{F}}=2\mu(\mathbf{F}-\mathbf{U}\mathbf{V}^\top)+\lambda(J-1)J \mathbf{F^{-\top}}
 $$
+
 in which $\psi(\mathbf{F})=\mu \sum_i(\sigma_i-1)^2+ \frac{\lambda}{2}(J-1)^2$ is the elastic energy density, $\sigma_i$ are singular values of $\mathbf{F}$, and $J_p^{(n)}=\frac{V_p^{(n)}}{V_p^{(0)}}=\det(\mathbf{F}_p^{(n)})$ is the volume ratio. $\mathbf{U}$ and $\mathbf{V}$ are orthonormal matrices obtained from the singular value decomposition (SVD) of $\mathbf{F}$.
 
 It is worth noting that we only simulate the elastic and the snow material with this Corotaed model, and the handling details are different from different materials.
 
 (1) For the fluid material, we use the model of weakly compressible fluids. We apply this simplification so we do not need to do projection in the Grid Operation step. In this model, we use Cauchy stress $\sigma=-p \mathbf{I}=K(J-1)\mathbf{I}$ to replace the 1st Piola stress $\mathbf{P}(\mathbf{F})\mathbf{F}^\top$. $E$ is the bulk modulus and we use $K=400$ in our system. $J$ is the volume ratio mentioned above. We directly update $J$ in the fluid model in order to avoid catastrophic cancellation problem:
+
 $$
 \mathbf{F}_p^{(n+1)}=(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)}) \mathbf{F}_p^{(n)} \\
 \det(\mathbf{F}_p^{(n+1)})=\det(\mathbf{I}+\Delta t \mathbf{C}_p^{(n)})\det(\mathbf{F}_p^{(n)}) \\
 J_p^{(n+1)}=(1+\Delta t\mathbf{tr}(\mathbf{C}_p^{(n)}))J_p^{(n)}
 $$
+
 (2) For the elastic material, $\mu$ and $\lambda$ are obtained from Young’s modulus $E$ and Poisson ratio $\nu$. The relationship is
+
 $$
 \mu=\frac{E}{2(1+\nu)} \quad \quad \lambda=\frac{E \nu}{(1+\nu)(1-2\nu)} \\
 $$
+
 in which we use $E=5000$ and $\nu=0.2$
 
 (3) For the snow material, we also use $\mu$ and $\lambda$ from Young’s modulus $E$ and Poisson ratio $\nu$. However, we additionally add a hardening coefficient $h=e^{10(1-J)}$ that scale each particle's $\mu$ and $\lambda$ to simulate the properties that the snow would harden when compressed. Then we have $\mu'=h\mu$ and $\lambda'=h\lambda$. We also clamp the $\sigma_i$ to $[0.975, 1.0045]$ to simulate snow's elastic deformation property.
@@ -68,18 +82,23 @@ in which we use $E=5000$ and $\nu=0.2$
 Since we do not need to do projection in the Grid Operation. There are only two things we need to do:
 
 (1) We calculate the velocity of each grid $i$:
+
 $$
 \hat{\mathbf{v}}_i^{(n+1)}=\frac{(m\mathbf{v})_i^{(n+1)}}{m_i^{(n+1)}}
 $$
+
 (2) We enforce the boundary conditions (BC) with the grid velocity:
+
 $$
 \mathbf{v}_i^{(n+1)}=\hat{\mathbf{v}}_i^{(n+1)}-\mathbf{n} \cdot \min(\mathbf{n}^\top \mathbf{v}_i^{(n+1)},0)
 $$
+
 Actually we also add the gravity in this stage instead of adding it in the P2G part for convenience. 
 
 #### 2.3  Grid to Particle
 
 In this last part, we update the velocity and the position of each particle $p$ from grids with symplectic Euler. We also update the matrix $\mathbf{C}$ . Then we have
+
 $$
 \mathbf{v}_p^{(n+1)}=\sum_{i \in N_p} w_{ip}\mathbf{v}_i^{(n+1)} \\
 \mathbf{C}_p^{(n+1)}=\frac{4}{\Delta x^2} \sum_{i \in N_p} w_{ip}\mathbf{v}_i^{(n+1)}(\mathbf{x}_i-\mathbf{x}_p^{(n)})^\top \\
@@ -95,9 +114,11 @@ $$
 For better visualization, we reconstruct mesh surfaces from the particles in the system and render the scene with the software [Blender](https://www.blender.org/) and the one its plugin [Taichi-Blend](https://github.com/taichi-dev/taichi_blend). 
 
 To reconstruct the surfaces, we need to voxelize the particles at first. We calculate the density of each grid $i$ with the quadratic kernel function
+
 $$
 \rho_i=\sum_{p \in N_i} w_{ip}
 $$
+
 And then we choose $\rho_{base}=0.125$ as a contour to reconstruct surface from the density value. We use the marching cube algorithm to reconstruct from each grid. The following figure show the cube configurations (the colors of a cube's 8 vertices are assigned according to whether its density value is larger than $\rho_{base}$ or not)
 
 ![marching_cube](./img/marching_cube.jpg)
